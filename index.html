@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fargesudoku</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#f3efe8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17151c" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fargesudoku">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{--bg:#f3efe8;--fg:#1d1b22;--mut:#6b6676;--card:#fffdf9;--line:#cfc8d8;--thick:#2b2833;--acc:#4361ee;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17151c;--fg:#f1eef6;--mut:#a29cb0;--card:#221f2a;--line:#3a3646;--thick:#cfc8e0;--acc:#7b93ff}}
+:root[data-theme="dark"]{--bg:#17151c;--fg:#f1eef6;--mut:#a29cb0;--card:#221f2a;--line:#3a3646;--thick:#cfc8e0;--acc:#7b93ff}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;justify-content:center}
+main{width:100%;max-width:440px;padding:14px 14px 28px}
+h1{font-size:26px;margin:4px 0 12px;letter-spacing:-.5px;font-weight:800}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;padding:10px 4px;border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:12px;font:inherit;font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:400;color:var(--mut);font-size:11px}
+.tabs button.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc) inset}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.nav button{border:0;background:var(--card);color:var(--fg);width:42px;height:42px;border-radius:12px;font-size:20px;border:2px solid var(--line)}
+.nav .lv{background:none;width:auto;flex:1;margin:0 8px;font-weight:700;font-size:16px;border:2px solid var(--line);background:var(--card)}
+.nav .lv span{color:var(--mut);font-weight:400}
+#board{display:grid;width:100%;aspect-ratio:1;border:3px solid var(--thick);border-radius:8px;overflow:hidden;background:var(--card);margin-bottom:12px;touch-action:manipulation}
+.c{position:relative;border:0;padding:0;margin:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;font-weight:800;color:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center}
+.c.br{border-right:3px solid var(--thick)}.c.bb{border-bottom:3px solid var(--thick)}
+.c .d{position:absolute;inset:0;margin:6%;border-radius:22%;display:flex;align-items:center;justify-content:center}
+.c.g .d::after{content:"";width:16%;aspect-ratio:1;border-radius:50%;background:rgba(0,0,0,.45);position:absolute;bottom:10%;right:10%}
+.c.sel{outline:3px solid var(--acc);outline-offset:-3px;z-index:2}
+.c.same .d{box-shadow:0 0 0 3px var(--acc)}
+.c.bad{background:repeating-linear-gradient(45deg,#e6394633 0 6px,transparent 6px 12px)}
+.pal{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.pal button{width:44px;height:44px;border-radius:14px;border:3px solid transparent;font-weight:800;color:rgba(0,0,0,.65);font-size:13px}
+.pal button:active{transform:scale(.92)}
+.pal button.done{opacity:.28}
+.act{display:flex;gap:6px;flex-wrap:wrap}
+.act button{flex:1;min-width:80px;padding:10px 6px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:14px;font-weight:600}
+.act button.on{border-color:var(--acc)}
+#list{display:none;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px;margin-top:12px;max-height:240px;overflow:auto;padding:4px}
+#list.open{display:grid}
+#list button{padding:10px 0;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:13px}
+#list button.ok{background:#90be6d55}#list button.cur{border-color:var(--acc)}
+#win{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;z-index:9}
+#win.open{display:flex}
+#win div{background:var(--card);padding:26px;border-radius:20px;text-align:center;max-width:300px}
+#win h2{margin:0 0 6px;font-size:24px}#win p{color:var(--mut);margin:0 0 16px}
+#win button{padding:12px 20px;border-radius:12px;border:0;background:var(--acc);color:#fff;font:inherit;font-weight:700;font-size:15px}
+.hint{color:var(--mut);font-size:12px;text-align:center;margin-top:12px}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.view{padding-top:6px}.view[hidden],#game[hidden]{display:none}
+.big{font-size:34px;margin:10px 0 8px}
+.logo{display:flex;gap:6px;margin-bottom:18px}.logo i{flex:1;aspect-ratio:1;border-radius:30%}
+.mb{display:block;width:100%;position:relative;overflow:hidden;text-align:left;padding:14px 16px;margin-bottom:10px;border-radius:16px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:18px;font-weight:800}
+.mb small{display:block;color:var(--mut);font-size:13px;font-weight:400;margin-top:2px}
+.mb i{position:absolute;left:0;bottom:0;height:5px;background:var(--acc)}
+.mb.daily{border-color:var(--acc);background:linear-gradient(120deg,var(--card),color-mix(in srgb,var(--acc) 18%,var(--card)))}
+.row2{display:flex;gap:10px}.row2 .mb{flex:1}
+.top{display:flex;align-items:center;gap:12px;margin:2px 0 14px;font-size:20px}.top h2{margin:0;font-size:22px}
+.back{border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:12px;padding:8px 12px;font:inherit;font-weight:700;font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center;width:100%;padding:16px;margin-bottom:10px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:17px;font-weight:700}
+.row span{padding:4px 14px;border-radius:20px;background:var(--line);font-size:14px}.row.on span{background:var(--acc);color:#fff}
+.ac{display:flex;gap:12px;align-items:center;padding:12px 14px;margin-bottom:8px;border-radius:14px;border:2px solid var(--line);background:var(--card)}
+.ac.lock{opacity:.45}.ac em{font-size:26px;font-style:normal}.ac b{display:block}.ac small{color:var(--mut)}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translate(-50%,-150%);background:var(--acc);color:#fff;padding:12px 18px;border-radius:14px;font-weight:700;z-index:20;transition:transform .3s;max-width:90vw;text-align:center}
+#toast.on{transform:translate(-50%,0)}
+.dr{display:flex;gap:8px;margin-top:10px}
+.dr button{flex:1;padding:10px 4px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:14px;font-weight:700}
+.dr button.ok{background:#90be6d55}
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg button{flex:1;padding:12px 4px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-weight:700}
+.seg button.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc) inset}
+.lbl{color:var(--mut);font-size:13px;margin:16px 0 6px}
+.nt{position:absolute;inset:7%;display:grid;gap:2px;pointer-events:none}
+.nt i{border-radius:30%}
+.pal.nm button{border-radius:50%;transform:scale(.82)}
+#win button{margin:4px}#win .alt{background:var(--line);color:var(--fg)}
+#timer{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--mut);font-size:16px}
+#list button small{display:block;font-size:9px;color:#e0a800;line-height:1}
+.sl{padding:10px 4px;margin-bottom:6px}.sl label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px}
+.sl input{width:100%;accent-color:var(--acc);height:28px}
+.pr{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;margin-bottom:8px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-weight:700;text-align:left}
+.pr.on{border-color:var(--acc)}.pr.lk{opacity:.5}.pr small{display:block;color:var(--mut);font-weight:400}
+.pr .sw{display:flex;gap:3px;margin-left:auto}.pr .sw i{width:14px;height:14px;border-radius:4px}
+.cf{position:fixed;top:-16px;width:9px;height:14px;z-index:30;pointer-events:none;border-radius:2px;animation-name:fall;animation-timing-function:linear;animation-fill-mode:forwards}
+@keyframes fall{to{transform:translateY(112vh) rotate(720deg)}}
+.pal button.armed{border-color:var(--fg);box-shadow:0 0 0 3px var(--acc)}
+.calnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;text-transform:capitalize}
+.calnav button{width:42px;height:42px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--fg);font-size:20px}
+#calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}
+.wd{text-align:center;font-size:11px;color:var(--mut)}
+.cd{aspect-ratio:1;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:13px;padding:0;line-height:1.1}
+.cd.f3{background:#90be6d88}.cd.f1{background:#f9c74f66}.cd.fz{background:#4cc9f055}.cd.td{border-color:var(--acc)}.cd.sl{box-shadow:0 0 0 3px var(--acc)}.cd:disabled{opacity:.3}
+.chs{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}
+#list .chip{flex:0 0 auto;padding:8px 12px;border-radius:20px;font-size:13px}
+#list .chip.on{border-color:var(--acc)}#list .chip.lk{opacity:.55}
+.c.hl:not(.bad){background:color-mix(in srgb,var(--acc) calc(var(--hlp)*var(--hlk)),var(--card))}
+.c.dg::before{content:"";position:absolute;inset:0;background:color-mix(in srgb,var(--acc) 12%,transparent);pointer-events:none}
+#mCont[hidden]{display:none}
+#mCont{background:var(--acc);color:#fff;border-color:var(--acc)}#mCont small{color:rgba(255,255,255,.85)}
+.mb.sm{padding:11px 16px;font-size:16px}.qr{float:right;color:var(--mut);font-size:14px;font-weight:600}
+.row2 .mb{font-size:16px}
+.mb .hd{display:flex;justify-content:space-between;align-items:center}
+.lnk{padding:6px 10px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:13px;font-weight:600}
+.ibar{display:flex;gap:8px;margin-top:6px}
+.ibar button{flex:1;padding:10px 2px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:12px;font-weight:600}
+.ibar span{display:block;font-size:22px;margin-bottom:2px}
+#dlg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;z-index:40}#dlg.open{display:flex}
+#dlg div{background:var(--card);padding:24px;border-radius:20px;text-align:center;max-width:330px;margin:16px}
+#dlg h2{margin:0 0 8px;font-size:21px}#dlg p{color:var(--mut);margin:0 0 16px;white-space:pre-line;font-size:14px;text-align:left}
+#dlg button{padding:12px 18px;border-radius:12px;border:0;background:var(--acc);color:#fff;font:inherit;font-weight:700;font-size:15px;margin:4px}#dlg .alt{background:var(--line);color:var(--fg)}
+.pal{flex-wrap:nowrap;gap:6px}
+.pal button{width:auto;flex:1 1 0;min-width:0;max-width:52px;height:auto;aspect-ratio:1;font-size:clamp(12px,4vw,18px)}
+.c .d,.pal button{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.65)}
+.c .d{font-size:clamp(12px,4.6vw,22px)}
+.c.g .d{box-shadow:inset 0 0 0 3px rgba(0,0,0,.5)}.c.g .d::after{display:none}
+.c.g.same .d{box-shadow:inset 0 0 0 3px rgba(0,0,0,.5),0 0 0 3px var(--acc)}
+@keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.d.pop{animation:pop .22s ease-out}#win div{animation:pop .3s ease-out}
+.view,#game:not([hidden]){animation:fi .22s ease-out}
+.logo i{animation:bob 2.4s ease-in-out infinite}
+.big{background:linear-gradient(90deg,#e03131,#ff922b,#51cf66,#1c4fd8,#8e44ad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.mb:active,.ibar button:active,.act button:active{transform:scale(.97)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.c.tut{outline:3px dashed var(--acc);outline-offset:-3px;z-index:2}
+.act button{min-width:70px}
+#more[hidden]{display:none}
+.ibar button.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc) inset}
+.pal button.tutc{outline:3px dashed var(--acc);outline-offset:3px;animation:bob 1.4s ease-in-out infinite}
+:root{--hlk:1;--hlp:22%}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--hlk:1.6}}
+:root[data-theme="dark"]{--hlk:1.6}
+.c.no::after{content:"";position:absolute;inset:0;background:var(--card);opacity:.6;pointer-events:none}
+.pv{display:flex;gap:4px;margin:0 0 10px}.pv i{flex:1;height:26px;border-radius:6px;border:2px solid var(--line);background:var(--card)}
+.pv i.h{background:color-mix(in srgb,var(--acc) calc(var(--hlp)*var(--hlk)),var(--card))}
+</style>
+</head>
+<body>
+<main>
+<section id="menu" class="view">
+<h1 class="big">Fargesudoku</h1><div class="logo" id="logo"></div>
+<div class="mb daily" id="mDaily"></div>
+<button class="mb" id="mCont" hidden></button>
+<div id="mDiffs"></div>
+<div class="row2"><button class="mb" id="mWeek"></button><button class="mb" data-go="spec">Spesialbrett<small>Egne regler</small></button></div>
+<button class="mb sm" id="mQuest"></button>
+<div class="ibar"><button id="mAch"><span>🏆</span>Prestasjoner</button><button data-go="stat"><span>📊</span>Statistikk</button><button data-go="set"><span>⚙️</span>Innstillinger</button><button data-go="how"><span>❓</span>Hjelp</button></div>
+</section>
+<section id="ach" class="view" hidden><div class="top"><button class="back" data-go="menu">‹ Meny</button><h2>Prestasjoner</h2></div><div id="achList"></div></section>
+<section id="set" class="view" hidden><div class="top"><button class="back" data-go="menu">‹ Meny</button><h2>Innstillinger</h2></div><div id="setList"></div><p class="hint">Vibrasjon støttes ikke i alle nettlesere, for eksempel Safari på iPhone.</p></section>
+<section id="spec" class="view" hidden><div class="top"><button class="back" data-go="menu">‹ Meny</button><h2>Spesialbrett</h2></div><div id="specList"></div></section>
+<section id="cal" class="view" hidden><div class="top"><button class="back" data-go="menu">‹ Meny</button><h2>Kalender</h2></div>
+<div class="calnav"><button id="cPrev" aria-label="Forrige måned">‹</button><b id="cTitle"></b><button id="cNext" aria-label="Neste måned">›</button></div>
+<div id="calGrid"></div><div id="calDay"></div></section>
+<section id="stat" class="view" hidden><div class="top"><button class="back" data-go="menu">‹ Meny</button><h2>Statistikk</h2></div><div id="statList"></div></section>
+<section id="how" class="view" hidden><div class="top"><button class="back" data-go="menu">‹ Meny</button><h2>Slik spiller du</h2></div>
+<div class="ac"><em>🎯</em><div><b>Målet</b><small>Fyll brettet slik at hver farge bare finnes én gang i hver rad, hver kolonne og hver tykt innrammede rute.</small></div></div>
+<div class="ac"><em>👆</em><div><b>Spille</b><small>Trykk på en tom rute og velg farge under brettet. Ruter med en liten prikk er ledetråder og kan ikke endres. Tips: trykk på en farge først (uten valgt rute) og deretter på flere ruter, så fylles de med den fargen.</small></div></div>
+<div class="ac"><em>🎨</em><div><b>Nedtonede farger</b><small>Når en farge er brukt like mange ganger som brettet er stort, blir knappen nedtonet. Det betyr bare at fargen er brukt opp, ikke at plasseringen er riktig. Ruter som bryter reglene får skravur.</small></div></div>
+<div class="ac"><em>🏆</em><div><b>Ukens utfordring og oppdrag</b><small>Hver uke er det ett ekstra vanskelig 9×9-brett. Hver dag får du tre oppdrag, og når alle er fullført får du en ❄️.</small></div></div>
+<div class="ac"><em>🧩</em><div><b>Spesialbrett</b><small>Brett med en ekstra regel: diagonalene må ha alle fargene, eller samme farge kan ikke stå et hestehopp fra hverandre. De har egne nivåer og stjerner.</small></div></div>
+<div class="ac"><em>✏️</em><div><b>Notater</b><small>Slå på Notater for å merke farger som kan passe i en rute.</small></div></div>
+<div class="ac"><em>↩️</em><div><b>Angre og hint</b><small>Angre tar deg tilbake steg for steg. Hint fyller inn riktig farge, men gir bare én stjerne.</small></div></div>
+<div class="ac"><em>⭐</em><div><b>Stjerner</b><small>1 stjerne for å løse, 2 uten hint, 3 uten hint og raskt nok. Nivåene er delt i kapitler på 25, og neste kapittel åpnes med 20 ★ i forrige.</small></div></div>
+<div class="ac"><em>📅</em><div><b>Daglig utfordring</b><small>Tre nye brett hver dag, ett på hver vanskelighetsgrad. Går du glipp av en dag, kan en fryst dag ❄️ redde rekken. Du får en ny for hver 7. dag du spiller (maks 3). Tidligere brett finner du i kalenderen.</small></div></div>
+<button class="mb" id="tutB" style="text-align:center">Prøv selv (interaktiv)</button>
+<button class="mb" data-go="menu" style="text-align:center">Kom i gang</button></section>
+<div id="game" hidden>
+<div class="top"><button class="back" data-go="menu">‹ Meny</button><b>Fargesudoku</b><span id="timer"></span></div>
+<div class="tabs" id="tabs"></div>
+<div class="nav"><button id="prev" aria-label="Forrige nivå">‹</button><button class="lv" id="lvBtn"></button><button id="next" aria-label="Neste nivå">›</button></div>
+<p class="hint" id="rule" style="margin:-4px 0 10px"></p>
+<div id="board"></div>
+<div class="pal" id="pal"></div>
+<div class="ibar" id="gbar" style="margin-top:0"><button id="undo"><span>↩️</span>Angre</button><button id="notes"><span>✏️</span>Notater</button><button id="erase"><span>🧽</span>Slett</button><button id="hintB"><span>💡</span>Hint</button><button id="moreB"><span>⋯</span>Mer</button></div>
+<div class="act" id="more" hidden style="margin-top:8px"><button id="autoB">Auto-notater</button><button id="chkB">Kontroller</button><button id="reset">Start på nytt</button><button id="sym">Symboler</button></div>
+<div id="list"></div>
+<p class="hint">Hver farge skal bare forekomme én gang i hver rad, kolonne og rute.</p>
+</div>
+</main>
+<div id="dlg"><div><h2 id="dT"></h2><p id="dM"></p><button id="dY"></button><button id="dN" class="alt">Avbryt</button></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="win"><div><h2>Løst! 🎉</h2><div id="stars" style="font-size:32px;color:#e0a800;margin-bottom:6px"></div><p id="winp"></p><button id="winb">Neste nivå</button><br><button id="shareB" class="alt">Del resultat</button></div></div>
+<script>
+const LEVELS=300;
+let ALL=["#e03131","#ff922b","#ffe033","#51cf66","#0b8a8f","#74c0fc","#1c4fd8","#8e44ad","#ff8ac4"];
+const CFG={
+ easy:{n:4,br:2,bc:2,clues:8,name:"Lett",sub:"4×4",col:[0,2,3,6]},
+ medium:{n:6,br:2,bc:3,clues:16,name:"Middels",sub:"6×6",col:[0,1,2,3,6,7]},
+ hard:{n:9,br:3,bc:3,clues:25,name:"Vanskelig",sub:"9×9",col:[0,1,2,3,4,5,6,7,8]}
+};
+let diff="easy",level=1,N,P,full,puz,sol,cur,sel=-1,showSym=false,done={easy:[],medium:[],hard:[],x9:[],k9:[],x6:[]};
+try{const s=JSON.parse(localStorage.getItem("fs-done")||"null");if(s)done=Object.assign(done,s)}catch(e){}
+function save(){try{localStorage.setItem("fs-done",JSON.stringify(done))}catch(e){}}
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(a,r){for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const pc=m=>{let c=0;while(m){m&=m-1;c++}return c};
+function setup(cf){N=cf.n;full=(1<<(N+1))-2;P=[];
+ for(let i=0;i<N*N;i++){const r=Math.floor(i/N),c=i%N,s=new Set();
+  for(let k=0;k<N;k++){s.add(r*N+k);s.add(k*N+c)}
+  const r0=Math.floor(r/cf.br)*cf.br,c0=Math.floor(c/cf.bc)*cf.bc;
+  for(let a=0;a<cf.br;a++)for(let b=0;b<cf.bc;b++)s.add((r0+a)*N+c0+b);
+  if(sp&&SPEC[sp].v==="x"){if(r===c)for(let k=0;k<N;k++)s.add(k*N+k);if(r+c===N-1)for(let k=0;k<N;k++)s.add(k*N+N-1-k)}
+  if(sp&&SPEC[sp].v==="k")for(const[a,b]of[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]){const rr=r+a,cc=c+b;if(rr>=0&&rr<N&&cc>=0&&cc<N)s.add(rr*N+cc)}
+  s.delete(i);P.push([...s])}}
+function search(g,lim,r){let cnt=0;
+ const rec=()=>{let b=-1,bm=0,bn=99;
+  for(let i=0;i<N*N;i++){if(g[i])continue;let u=0;for(const p of P[i])if(g[p])u|=1<<g[p];
+   const m=full&~u,c=pc(m);if(c<bn){bn=c;b=i;bm=m;if(c===0)return false}}
+  if(b<0){cnt++;return cnt>=lim}
+  const v=[];for(let x=1;x<=N;x++)if(bm>>x&1)v.push(x);
+  if(r)shuffle(v,r);
+  for(const x of v){g[b]=x;if(rec())return true}
+  g[b]=0;return false};
+ rec();return cnt}
+function gen(d,l,cl){const cf=CFG[d];setup(cf);
+ const seed=(l*7919+(d==="easy"?11:d==="medium"?23:37)*104729)>>>0,r=rng(seed);
+ const s=new Array(N*N).fill(0);search(s,1,r);
+ const p=s.slice(),order=shuffle([...Array(N*N).keys()],r);let clues=N*N;
+ for(const i of order){if(clues<=(cl||cf.clues))break;const v=p[i];p[i]=0;
+  if(search(p.slice(),2)===1)clues--;else p[i]=v}
+ return{p,s}}
+function load(d,l,dl,wk,spk,tt){tut=!!tt;sp=spk||"";weekly=!!wk;daily=!!(dl||wk);diff=d;level=l;won=false;hinted=false;checked=false;chkSet.clear();setup(CFG[d]);const g=wk?gen("hard",200000+wnum,21):spk?gen(d,SPEC[spk].off+l,SPEC[spk].clues):gen(d,dl?100000+dnum:l);setup(CFG[d]);puz=g.p;sol=g.s;cur=puz.slice();sel=-1;notes=new Array(N*N).fill(0);hist=[];secs=0;pick=0;const sv=SAVE[bkey()];if(sv&&sv.c.length===N*N&&sv.c.every((v,i)=>!puz[i]||v===puz[i])){cur=sv.c.slice();notes=sv.n.slice();hinted=!!sv.h;checked=!!sv.k;secs=sv.t||0}$("list").classList.remove("open");if(!tut){ST.last={d:diff,l:level,dl:daily&&!weekly,w:weekly,dn:dnum,wn:wnum,sp:sp};saveST()}show("game");render()}
+const $=id=>document.getElementById(id);
+function conflicts(){const bad=new Set();for(let i=0;i<N*N;i++){if(!cur[i])continue;for(const p of P[i])if(cur[p]===cur[i]){bad.add(i);break}}return bad}
+function render(){
+ const cf=CFG[diff],b=$("board");b.style.gridTemplateColumns=`repeat(${N},1fr)`;b.innerHTML="";
+ const HS=hlSet(),CV=SET.sw?(pick||(sel>=0&&cur[sel]?cur[sel]:0)):0,CN=curNames(),bad0=conflicts(),bad=new Set(SET.err===false?[]:bad0);chkSet.forEach(x=>bad.add(x));
+ for(let i=0;i<N*N;i++){const r=Math.floor(i/N),c=i%N,e=document.createElement("button");
+  e.className="c"+(puz[i]?" g":"")+((c+1)%cf.bc===0&&c<N-1?" br":"")+((r+1)%cf.br===0&&r<N-1?" bb":"")+(i===sel?" sel":"")+(sp&&SPEC[sp].v==="x"&&(r===c||r+c===N-1)?" dg":"")+(tut&&i===tutI?" tut":"")+(HS.has(i)?" hl":"")+(CV&&!cur[i]&&!puz[i]&&!(cand(i)>>CV&1)?" no":"")+(bad.has(i)?" bad":"")+((sel>=0&&cur[sel]&&cur[i]===cur[sel])||(pick&&cur[i]===pick)?" same":"");
+  e.setAttribute("aria-label",`Rad ${r+1}, kolonne ${c+1}, `+(cur[i]?CN[cf.col[cur[i]-1]]+(puz[i]?" (ledetråd)":"")+(bad.has(i)?", konflikt":""):notes[i]?"notater":"tom"));
+  if(cur[i]){const d=document.createElement("span");d.className="d"+(i===lp?" pop":"");d.style.background=ALL[cf.col[cur[i]-1]];if(showSym)d.textContent=SYM[cur[i]-1];e.appendChild(d)}
+  else if(notes[i]){const t=document.createElement("span");t.className="nt";t.style.gridTemplateColumns=`repeat(${N===4?2:3},1fr)`;for(let v=1;v<=N;v++)t.innerHTML+=`<i${notes[i]>>v&1?` style="background:${ALL[cf.col[v-1]]}"`:""}></i>`;e.appendChild(t)}
+  e.onclick=()=>{if(tut){if(i!==tutI){$("rule").textContent="Trykk på den markerte ruten først.";return}if(tutColor){if(pick===sol[tutI]){sel=i;place(pick);sel=-1;render()}else $("rule").textContent="Trykk først på den markerte fargen under brettet.";return}sel=i;$("rule").textContent=why(i)+" Velg riktig farge under brettet.";render();return}if(pick&&!puz[i]){sel=i;place(pick);sel=-1;render()}else{sel=i;render()}};b.appendChild(e)}
+ const cnt=new Array(N+1).fill(0);cur.forEach(v=>v&&cnt[v]++);
+ lp=-1;$("autoB").hidden=!SET.an;$("timer").textContent=fmt(secs);$("pal").innerHTML="";$("pal").className="pal"+(noteMode?" nm":"");$("notes").className=noteMode?"on":"";
+ for(let v=1;v<=N;v++){const e=document.createElement("button");e.style.background=ALL[cf.col[v-1]];e.setAttribute("aria-label",CN[cf.col[v-1]]);
+  e.className=(cnt[v]>=N?"done ":"")+(pick===v?"armed":"")+(tut&&tutColor&&tutI>=0&&sol[tutI]===v?" tutc":"");if(showSym)e.textContent=SYM[v-1];e.onclick=()=>place(v);$("pal").appendChild(e)}
+ $("lvBtn").innerHTML=weekly?`Ukens brett <span>Vanskelig · uke ${wnum}${ST.wk.includes(wnum)?" ✓":""}</span>`:daily?`Daglig · ${cf.name} <span>${dayLabel(dnum)}${ST.dd[diff].includes(dnum)?" ✓":""}</span>`:`${sp?SPEC[sp].name:cf.name} · nivå ${level} <span>/ ${LEVELS}${done[dk()].includes(level)?" ✓":""}</span>`;
+ $("sym").className=showSym?"on":"";
+ $("prev").style.visibility=$("next").style.visibility=daily?"hidden":"";$("tabs").style.display=weekly||sp?"none":"";if(!tut)$("rule").textContent=sp?SPEC[sp].rule:"";
+ document.querySelectorAll(".tabs button").forEach(t=>t.classList.toggle("on",t.dataset.d===diff));
+ if(!won&&!tut&&!bad0.size&&cur.every(v=>v))win();else if(!won)persist()}
+function place(v){if(tut&&(sel<0||puz[sel])){if(!tutColor){$("rule").textContent="Trykk først på den markerte ruten.";return}if(v!==sol[tutI]){$("rule").textContent="Det er ikke fargen vi skal bruke nå. Velg den markerte fargen.";return}pick=v;$("rule").textContent="Bra! Trykk nå på den markerte ruten.";render();return}
+if(sel<0||puz[sel]){pick=pick===v?0:v;render();return}
+ if(noteMode){if(cur[sel])return;push();notes[sel]^=1<<v;snd("ui");render();return}
+ push();cur[sel]=cur[sel]===v?0:v;notes[sel]=0;lp=cur[sel]?sel:-1;
+ if(!cur[sel])snd("erase");else{for(const p of P[sel])notes[p]&=~(1<<v);if(SET.err!==false&&conflicts().has(sel)){snd("bad");vib([30,40,30])}else{snd("place");vib(10)}}
+ if(tut&&cur[sel]){if(cur[sel]===sol[sel])tutNext();else $("rule").textContent="Ikke riktig farge her. Prøv en annen."}
+ render()}
+function win(){won=true;let first;
+ if(weekly){first=!ST.wk.includes(wnum);if(first)ST.wk.push(wnum)}
+ else if(daily){first=!ST.dd[diff].includes(dnum);if(first){ST.dd[diff].push(dnum);if(!ST.daily.includes(dnum)){ST.daily.push(dnum);if(ST.daily.length%7===0&&ST.fz<3)ST.fz++}}}
+ else{first=!done[dk()].includes(level);if(first){done[dk()].push(level);save()}}
+ if(first&&!hinted)ST.clean++;
+ const stars=hinted?1:(checked||secs>TARGET[diff])?2:3;let rec=false;
+ if(!daily){const k=bkey();if(!ST.bt[k]||secs<ST.bt[k]){rec=!!ST.bt[k];ST.bt[k]=secs}ST.st[k]=Math.max(ST.st[k]||0,stars)}
+ if(first&&!sp){const t=ST.tm[diff];t.n++;t.sum+=secs;if(!t.best||secs<t.best)t.best=secs}
+ if(first)qEvent(["win",...(hinted?[]:["clean"]),...(stars===3?["star3"]:[]),...(daily&&!weekly?["daily"]:[]),...(diff==="hard"?["hard"]:[]),...(diff==="medium"?["med"]:[])]);
+ ST.last=null;saveST();delete SAVE[bkey()];wsave();$("shareB").style.display=daily&&!weekly&&dnum===today()?"":"none";snd("win");vib([40,60,40,60,120]);confetti();
+ $("stars").textContent="★".repeat(stars)+"☆".repeat(3-stars);
+ $("winp").textContent=(weekly?"Ukens brett løst!":daily?`Daglig utfordring løst! Rekke: ${streak()} ${streak()==1?"dag":"dager"}.`:`${sp?SPEC[sp].name:CFG[diff].name} – nivå ${level} er fullført.`)+` Tid: ${fmt(secs)}${rec?" – ny rekord! 🏅":""}`;
+ $("winb").textContent=daily||level>=LEVELS?"Til menyen":!chOpen(dk(),Math.floor(level/CH))?"Se kapitler":"Neste nivå";
+ $("win").classList.add("open");checkAch()}
+function buildList(c){const l=$("list"),K=dk();if(c===undefined)c=Math.floor((level-1)/CH);l.innerHTML="";
+ const bar=document.createElement("div");bar.className="chs";
+ for(let k=0;k<LEVELS/CH;k++){const b=document.createElement("button"),o=chOpen(K,k);b.className="chip"+(k===c?" on":"")+(o?"":" lk");b.textContent=(o?"":"🔒 ")+"Kap "+(k+1);b.onclick=()=>buildList(k);bar.appendChild(b)}
+ l.appendChild(bar);
+ if(!chOpen(K,c)){const m=document.createElement("p");m.className="hint";m.style.gridColumn="1/-1";m.textContent=`Kapittel ${c+1} åpnes med 20 ★ i kapittel ${c}. Du har ${chStars(K,c-1)}.`;l.appendChild(m);return}
+ for(let i=c*CH+1;i<=(c+1)*CH;i++){const e=document.createElement("button"),sr=stOf(K,i);e.innerHTML=i+(sr?`<small>${"★".repeat(sr)}</small>`:"");
+  e.className=(done[K].includes(i)?"ok ":"")+(i===level&&!daily?"cur":"");e.onclick=()=>{l.classList.remove("open");load(diff,i,false,false,sp)};l.appendChild(e)}}
+Object.keys(CFG).forEach(k=>{const t=document.createElement("button");t.dataset.d=k;
+ t.innerHTML=`${CFG[k].name}<small>${CFG[k].sub}</small>`;t.onclick=()=>{snd("ui");load(k,1,daily)};$("tabs").appendChild(t)});
+$("prev").onclick=()=>!daily&&level>1&&load(diff,level-1,false,false,sp);
+$("next").onclick=()=>!daily&&level<LEVELS&&chOpen(dk(),Math.floor(level/CH))&&load(diff,level+1,false,false,sp);
+$("lvBtn").onclick=()=>{if(daily)return;buildList();$("list").classList.toggle("open")};
+$("erase").onclick=()=>{if(sel>=0&&!puz[sel]){push();cur[sel]=0;notes[sel]=0;render()}};
+$("reset").onclick=()=>{push();cur=puz.slice();notes.fill(0);sel=-1;render()};
+$("sym").onclick=()=>{showSym=!showSym;render()};
+$("hintB").onclick=()=>{let i=sel>=0&&!puz[sel]&&cur[sel]!==sol[sel]?sel:-1;
+ if(i<0){const e=[...cur.keys()].filter(k=>!puz[k]&&cur[k]!==sol[k]);i=e.find(k=>cur[k]);if(i===undefined)i=e.find(k=>pc(cand(k))===1);if(i===undefined)i=e.find(k=>why(k).startsWith("Denne"));if(i===undefined)i=e[0]}
+ if(i===undefined||i<0)return;
+ const t=why(i);push();cur[i]=sol[i];notes[i]=0;sel=i;lp=i;hinted=true;snd("place");render();toast(t)};
+$("winb").onclick=()=>{$("win").classList.remove("open");if(daily||level>=LEVELS)show("menu");else if(!chOpen(dk(),Math.floor(level/CH))){buildList();$("list").classList.add("open")}else load(diff,level+1,false,false,sp)};
+$("win").onclick=e=>{if(e.target.id==="win")$("win").classList.remove("open")};
+
+let daily=false,dnum=0,won=false,hinted=false,mt=null,AC;
+let SET={sound:true,music:true,vib:true,theme:"system",pal:"std",hm:"all",hi:50,sw:false,err:true,an:true,lang:"auto"},ST={daily:[],clean:0,ach:[],dd:{easy:[],medium:[],hard:[]},bt:{},st:{},tm:{easy:{n:0,sum:0,best:0},medium:{n:0,sum:0,best:0},hard:{n:0,sum:0,best:0}},seen:0,fz:1,fzd:[],wk:[],q:{d:0,p:{},done:0},qd:0};
+try{Object.assign(SET,JSON.parse(localStorage.getItem("fs-set")||"{}"));Object.assign(ST,JSON.parse(localStorage.getItem("fs-st")||"{}"))}catch(e){}
+["sound","music","vib"].forEach(k=>{if(SET[k]===true)SET[k]={sound:100,music:50,vib:50}[k];else if(SET[k]===false)SET[k]=0});
+if("hl" in SET){if(SET.hl===false)SET.hm="off";delete SET.hl;saveSET()}
+function saveST(){try{localStorage.setItem("fs-st",JSON.stringify(ST))}catch(e){}}
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==="suspended")AC.resume();return AC}
+function tone(f,t0,d,ty,g){const a=ac();if(!a)return;const o=a.createOscillator(),v=a.createGain(),t=a.currentTime+t0;o.type=ty||"sine";o.frequency.value=f;v.gain.setValueAtTime(0,t);v.gain.linearRampToValueAtTime(g*cvol,t+.02);v.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(v);v.connect(a.destination);o.start(t);o.stop(t+d+.05)}
+const SFX={place(){tone(520,0,.12,"triangle",.15)},erase(){tone(300,0,.1,"triangle",.1)},bad(){tone(180,0,.2,"sawtooth",.07)},ui(){tone(660,0,.06,"sine",.08)},win(){[523,659,784,1047].forEach((f,i)=>tone(f,i*.12,.35,"triangle",.15))}};
+function snd(k){if(SET.sound){cvol=SET.sound/100;SFX[k]()}}
+function vib(p){if(SET.vib&&navigator.vibrate)try{const k=SET.vib/50;navigator.vibrate(Array.isArray(p)?p.map(x=>Math.round(x*k)):Math.round(p*k))}catch(e){}}
+const PENT=[261.6,293.7,329.6,392,440,523.3];
+function music(){clearInterval(mt);mt=null;if(!SET.music||!ac())return;const st=()=>{cvol=SET.music/50;const f=PENT[Math.floor(Math.random()*PENT.length)];tone(f,0,2.6,"sine",.045);if(Math.random()<.4)tone(f/2,0,3,"sine",.04)};st();mt=setInterval(st,1400)}
+document.addEventListener("pointerdown",()=>{if(SET.music&&!mt)music()});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){clearInterval(mt);mt=null}else if(SET.music)music()});
+function today(){const d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)}
+function dayLabel(n){return new Date(n*864e5).toLocaleDateString(LOC(),{weekday:"long",day:"numeric",month:"long",timeZone:"UTC"})}
+const dd=()=>["easy","medium","hard"][today()%3];
+function autoFreeze(){const t=today(),y=t-1;if(ST.daily.includes(t)||ST.daily.includes(y)||ST.fzd.includes(y))return;if(ST.fz>0&&(ST.daily.includes(y-1)||ST.fzd.includes(y-1))){ST.fz--;ST.fzd.push(y);saveST()}}
+function streak(){let n=today();if(!ST.daily.includes(n))n--;let c=0;while(ST.daily.includes(n)||ST.fzd.includes(n)){if(ST.daily.includes(n))c++;n--}return c}
+function show(v){["menu","ach","set","game","stat","how","cal","spec"].forEach(x=>$(x).hidden=x!==v);if(v==="stat")buildStat();if(v==="spec")buildSpec();if(v==="cal"){calM=0;calSel=today();buildCal()}if(v==="menu")buildMenu();if(v==="ach")buildAch();if(v==="set")buildSet();window.scrollTo(0,0)}
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{snd("ui");show(b.dataset.go)});
+const tot=()=>done.easy.length+done.medium.length+done.hard.length;
+const ACH=[
+["first","Første løsning","Løs ditt første nivå","🌱",()=>tot()>=1],
+["t10","På vei","Løs 10 nivåer","🎯",()=>tot()>=10],
+["t50","Utholdende","Løs 50 nivåer","💪",()=>tot()>=50],
+["t100","Hundre!","Løs 100 nivåer","💯",()=>tot()>=100],
+["t300","Fargemester","Løs 300 nivåer","👑",()=>tot()>=300],
+["e25","Lett som en plett","Løs 25 lette nivåer","🟢",()=>done.easy.length>=25],
+["m25","Midt i blinken","Løs 25 middels nivåer","🟡",()=>done.medium.length>=25],
+["h1","Modig","Løs ditt første vanskelige nivå","🔥",()=>done.hard.length>=1],
+["h25","Hjernetrim","Løs 25 vanskelige nivåer","🧠",()=>done.hard.length>=25],
+["c5","Uten hjelp","Løs 5 nivåer uten hint","🦉",()=>ST.clean>=5],
+["star10","Stjernespiller","Få 3 stjerner på 10 nivåer","⭐",()=>Object.values(ST.st).filter(x=>x===3).length>=10],
+["wk1","Ukens utfordrer","Løs ukens utfordring","🏔️",()=>ST.wk.length>=1],
+["q5","Oppdragsjeger","Fullfør dagens oppdrag 5 ganger","🏹",()=>ST.qd>=5],
+["sp10","Spesialist","Løs 10 spesialbrett","🧩",()=>done.x9.length+done.k9.length+done.x6.length>=10],
+["d1","Dagens løsning","Løs en daglig utfordring","📅",()=>ST.daily.length>=1],
+["d3","Hele dagen","Løs alle tre daglige brett samme dag","☀️",()=>ST.dd.easy.some(n=>ST.dd.medium.includes(n)&&ST.dd.hard.includes(n))],
+["s3","Tre på rad","Daglig utfordring 3 dager på rad","⚡",()=>streak()>=3],
+["s7","Ei hel uke","Daglig utfordring 7 dager på rad","🌈",()=>streak()>=7]];
+function checkAch(){const n=[];ACH.forEach(a=>{if(!ST.ach.includes(a[0])&&a[4]()){ST.ach.push(a[0]);n.push(a[1])}});
+ if(n.length){saveST();const t=$("toast");t.textContent="🏆 "+n.join(", ");t.classList.add("on");setTimeout(()=>t.classList.remove("on"),3500)}}
+function buildAch(){$("achList").innerHTML=ACH.map(a=>`<div class="ac${ST.ach.includes(a[0])?"":" lock"}"><em>${ST.ach.includes(a[0])?a[3]:"🔒"}</em><div><b>${a[1]}</b><small>${a[2]}</small></div></div>`).join("")}
+function saveSET(){try{localStorage.setItem("fs-set",JSON.stringify(SET))}catch(e){}}
+function theme(){const r=document.documentElement;if(SET.theme==="system")r.removeAttribute("data-theme");else r.setAttribute("data-theme",SET.theme)}
+function buildSet(){const l=$("setList");l.innerHTML='<p class="lbl">Språk</p>';buildLang(l);l.insertAdjacentHTML("beforeend",'<p class="lbl">Utseende</p>');
+ const sg=document.createElement("div");sg.className="seg";
+ [["system","System"],["light","Lys"],["dark","Mørk"]].forEach(([k,n])=>{const b=document.createElement("button");b.textContent=n;b.className=SET.theme===k?"on":"";b.onclick=()=>{SET.theme=k;saveSET();theme();snd("ui");buildSet()};sg.appendChild(b)});
+ l.appendChild(sg);buildPal(l);buildPlay(l);l.insertAdjacentHTML("beforeend",'<p class="lbl">Lyd og vibrasjon</p>');
+ [["sound","Lydeffekter"],["music","Musikk"],["vib","Vibrasjonsstyrke"]].forEach(([k,n])=>{const d=document.createElement("div");d.className="sl";
+  const v=()=>SET[k]?SET[k]+" %":"Av";
+  d.innerHTML=`<label>${n}<span>${v()}</span></label><input type="range" min="0" max="100" step="5" value="${SET[k]}" aria-label="${n}">`;
+  const r=d.querySelector("input"),sp=d.querySelector("span");
+  r.oninput=()=>{SET[k]=+r.value;sp.textContent=v();saveSET()};
+  r.onchange=()=>{if(k==="music")music();if(k==="sound")snd("ui");if(k==="vib")vib(30)};
+  l.appendChild(d)});buildBak(l)}
+function buildMenu(){autoFreeze();
+ const wn=Math.floor((today()+3)/7);$("mWeek").innerHTML=`Ukens utfordring ${ST.wk.includes(wn)?"✓":""}<small>Vanskelig 9×9 · ny hver mandag</small>`;$("mWeek").onclick=()=>{snd("ui");wnum=wn;load("hard",1,false,true)};
+ const qs=quests(),qd=qs.filter(q=>(ST.q.p[q.id]||0)>=q.n).length;
+ $("mQuest").innerHTML=`Dagens oppdrag <span class="qr">${qd}/3 ${qOpen?"▴":"▾"}</span>`+(qOpen?qs.map(q=>{const p=ST.q.p[q.id]||0;return `<small>${p>=q.n?"✅":"⬜"} ${q.t} (${p}/${q.n})</small>`}).join("")+`<small style="margin-top:6px">Alle tre gir +1 ❄️ (maks 3)</small>`:"");
+ $("mQuest").onclick=()=>{qOpen=!qOpen;snd("ui");buildMenu()};
+ const L=ST.last,mc=$("mCont");mc.hidden=!L;
+ if(L){mc.innerHTML=`Fortsett<small>${L.w?"Ukens brett":L.dl?"Daglig · "+CFG[L.d].name+" · "+dayLabel(L.dn):(L.sp?SPEC[L.sp].name:CFG[L.d].name)+" · nivå "+L.l}</small>`;
+  mc.onclick=()=>{snd("ui");if(L.w)wnum=L.wn;if(L.dl)dnum=L.dn;load(L.d,L.l,L.dl,L.w,L.sp)}};
+ $("logo").innerHTML=ALL.map((c,i)=>`<i style="background:${c};animation-delay:${i*.12}s"></i>`).join("");
+ $("mDaily").innerHTML=`<div class="hd">Daglig utfordring<button class="lnk">📅 Kalender</button></div><small>${dayLabel(today())} · rekke: ${streak()} · ❄️ ${ST.fz}</small><div class="dr"></div>`;$("mDaily").querySelector(".lnk").onclick=()=>{snd("ui");show("cal")};
+ for(const k in CFG){const b=document.createElement("button"),ok=ST.dd[k].includes(today());b.textContent=CFG[k].name+(ok?" ✓":"");b.className=ok?"ok":"";b.onclick=()=>{snd("ui");dnum=today();load(k,1,true)};$("mDaily").querySelector(".dr").appendChild(b)}
+ $("mDiffs").innerHTML="";
+ for(const k in CFG){const b=document.createElement("button"),n=done[k].length;b.className="mb";
+  b.innerHTML=`${CFG[k].name}<small>${CFG[k].sub} · ${n} / ${LEVELS} løst</small><i style="width:${n/LEVELS*100}%"></i>`;
+  b.onclick=()=>{snd("ui");let l=1;while(done[k].includes(l)&&l<LEVELS)l++;load(k,l);buildList();$("list").classList.add("open")};$("mDiffs").appendChild(b)}
+ $("mAch").onclick=()=>{snd("ui");show("ach")}}
+let hist=[],notes=[],noteMode=false,SAVE={};
+try{SAVE=JSON.parse(localStorage.getItem("fs-sv")||"{}")}catch(e){}
+function bkey(){return tut?"tut":weekly?`w${wnum}`:daily?`d${dnum}-${diff}`:`${sp||diff}-${level}`}
+function wsave(){try{localStorage.setItem("fs-sv",JSON.stringify(SAVE))}catch(e){}}
+function persist(){if(tut)return;if(!cur.some((v,i)=>v!==puz[i])&&!notes.some(x=>x))return;const k=bkey();delete SAVE[k];SAVE[k]={c:cur,n:notes,h:hinted?1:0,k:checked?1:0,t:secs};const ks=Object.keys(SAVE);if(ks.length>30)delete SAVE[ks[0]];wsave()}
+function push(){chkSet.clear();hist.push({c:cur.slice(),n:notes.slice()});if(hist.length>300)hist.shift()}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),3000)}
+function shareText(){const n=today();return `🎨 Fargesudoku – ${new Date(n*864e5).toLocaleDateString(LOC(),{day:"numeric",month:"long",timeZone:"UTC"})}\n`+["easy","medium","hard"].map((k,i)=>["🟢","🟡","🔴"][i]+" "+CFG[k].name+" "+(ST.dd[k].includes(n)?"✅":"⬜")).join("\n")+`\n🔥 Rekke: ${streak()}`}
+async function share(){const t=trStr(shareText());try{if(navigator.share){await navigator.share({text:t});return}}catch(e){if(e&&e.name==="AbortError")return}try{await navigator.clipboard.writeText(t);toast("Resultat kopiert!")}catch(e){prompt(trStr("Kopier resultatet:"),t)}}
+$("undo").onclick=()=>{if(won||!hist.length)return;const h=hist.pop();cur=h.c;notes=h.n;snd("erase");render()};
+$("notes").onclick=()=>{noteMode=!noteMode;snd("ui");render()};
+$("shareB").onclick=share;
+let secs=0,cvol=1;
+const TARGET={easy:90,medium:240,hard:600};
+const fmt=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+const PALS=[{id:"std",name:"Standard",n:["rød","oransje","gul","grønn","blågrønn","lyseblå","blå","lilla","rosa"],c:[...ALL]},
+{id:"cb",name:"Fargeblindvennlig",n:["oransje","lyseblå","grønn","gul","blå","rødoransje","rosa","grå","lilla"],c:["#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","#8a8a8a","#5b3a8f"]},
+{id:"pas",name:"Pastell",n:["rosa","lysoransje","lysegul","limegrønn","mintgrønn","lyseblå","blålilla","lilla","lyserosa"],req:"t10",c:["#ff8fa3","#ffc08a","#fff08a","#b9f08a","#8af0c8","#8ad8ff","#9aa8ff","#d09aff","#ff9ae0"]},
+{id:"neon",name:"Neon",n:["rød","oransje","gul","limegrønn","cyan","blå","fiolett","magenta","rosa"],req:"t50",c:["#ff1744","#ff9100","#ffea00","#76ff03","#00e5ff","#2979ff","#651fff","#d500f9","#ff4081"]},
+{id:"earth",name:"Jord",n:["murstein","oker","sennep","olivengrønn","grønnblå","stålblå","blågrå","plomme","brunrosa"],req:"star10",c:["#b5403a","#d98c3f","#d4b84a","#7a9a4a","#2f7d6d","#4a8fa8","#5a6aa8","#8a5a9a","#a8705a"]}];
+const unlocked=p=>!p.req||ST.ach.includes(p.req);
+const achName=id=>ACH.find(a=>a[0]===id)[1];
+function saveSET(){try{localStorage.setItem("fs-set",JSON.stringify(SET))}catch(e){}}
+function applyPal(){const p=PALS.find(x=>x.id===SET.pal);ALL=(p&&unlocked(p)?p:PALS[0]).c.slice()}
+function buildPal(l){l.insertAdjacentHTML("beforeend",'<p class="lbl">Fargepalett</p>');
+ PALS.forEach(p=>{const ok=unlocked(p),b=document.createElement("button");b.className="pr"+(SET.pal===p.id?" on":"")+(ok?"":" lk");
+  b.innerHTML=`<span>${p.name}<small>${ok?"":"🔒 Låses opp med «"+achName(p.req)+"»"}</small></span><span class="sw">${p.c.slice(0,6).map(c=>`<i style="background:${c}"></i>`).join("")}</span>`;
+  b.onclick=()=>{if(!ok){toast("Låses opp med prestasjonen «"+achName(p.req)+"»");return}SET.pal=p.id;saveSET();applyPal();snd("ui");buildSet()};l.appendChild(b)})}
+function buildStat(){const ic={easy:"🟢",medium:"🟡",hard:"🔴"};
+ let h=`<div class="ac"><em>🔥</em><div><b>Rekke: ${streak()} ${streak()==1?"dag":"dager"}</b><small>Dager med daglig brett løst: ${ST.daily.length}</small></div></div>`;
+ for(const k in CFG){const t=ST.tm[k];h+=`<div class="ac"><em>${ic[k]}</em><div><b>${CFG[k].name}: ${done[k].length} / ${LEVELS} løst</b><small>Beste tid: ${t.best?fmt(t.best):"–"} · Snitt: ${t.n?fmt(Math.round(t.sum/t.n)):"–"}</small></div></div>`}
+ h+=`<div class="ac"><em>🦉</em><div><b>${ST.clean} nivåer uten hint</b><small>Med 3 stjerner: ${Object.values(ST.st).filter(x=>x===3).length} nivåer</small></div></div>`;
+ $("statList").innerHTML=h}
+function confetti(){if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;for(let i=0;i<60;i++){const e=document.createElement("i");e.className="cf";e.style.cssText=`left:${Math.random()*100}vw;background:${ALL[i%ALL.length]};animation-duration:${2+Math.random()*1.8}s;animation-delay:${Math.random()*.6}s`;document.body.appendChild(e);setTimeout(()=>e.remove(),4800)}}
+setInterval(()=>{if($("game").hidden||won||document.hidden||!puz)return;secs++;$("timer").textContent=fmt(secs);if(secs%5===0)persist()},1000);
+let pick=0,calM=0,calSel=0;
+const CH=25;
+const stOf=(d,i)=>ST.st[d+"-"+i]||(done[d].includes(i)?1:0);
+const chStars=(d,c)=>{let t=0;for(let i=c*CH+1;i<=(c+1)*CH;i++)t+=stOf(d,i);return t};
+const chOpen=(d,c)=>c===0||chStars(d,c-1)>=20;
+function monthStart(n){const d=new Date(n*864e5);return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1)/864e5}
+function buildCal(){const t=today();if(!calM)calM=monthStart(t);const d0=new Date(calM*864e5);
+ $("cTitle").textContent=d0.toLocaleDateString(LOC(),{month:"long",year:"numeric",timeZone:"UTC"});
+ const len=new Date(Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth()+1,0)).getUTCDate(),off=(d0.getUTCDay()+6)%7;
+ let h=["ma","ti","on","to","fr","lø","sø"].map(x=>`<div class="wd">${x}</div>`).join("")+"<span></span>".repeat(off);
+ for(let i=1;i<=len;i++){const n=calM+i-1,c=["easy","medium","hard"].filter(k=>ST.dd[k].includes(n)).length,fz=!c&&ST.fzd.includes(n);
+  h+=`<button class="cd${c==3?" f3":c?" f1":fz?" fz":""}${n===t?" td":""}${n===calSel?" sl":""}" data-n="${n}"${n>t?" disabled":""}>${i}${c==3?"<br>✓":fz?"<br>❄️":c?"<br>"+c+"/3":""}</button>`}
+ $("calGrid").innerHTML=h;
+ $("calGrid").querySelectorAll(".cd").forEach(b=>b.onclick=()=>{calSel=+b.dataset.n;snd("ui");buildCal()});
+ const dv=$("calDay");dv.innerHTML="";
+ if(calSel){dv.innerHTML=`<p class="lbl">${dayLabel(calSel)}</p><div class="dr"></div>`;
+  for(const k in CFG){const ok=ST.dd[k].includes(calSel),b=document.createElement("button");b.textContent=CFG[k].name+(ok?" ✓":"");b.className=ok?"ok":"";b.onclick=()=>{snd("ui");dnum=calSel;load(k,1,true)};dv.querySelector(".dr").appendChild(b)}}}
+$("cPrev").onclick=()=>{calM=monthStart(calM-1);buildCal()};
+$("cNext").onclick=()=>{calM=Math.min(monthStart(calM+32),monthStart(today()));buildCal()};
+function makeCode(){return "FS1:"+btoa(unescape(encodeURIComponent(JSON.stringify({d:done,s:ST,t:SET}))))}
+function readCode(v){try{if(!v||!v.startsWith("FS1:"))return null;const o=JSON.parse(decodeURIComponent(escape(atob(v.slice(4)))));return o.d&&o.s?o:null}catch(e){return null}}
+const cnt=d=>Object.values(d).reduce((a,x)=>a+x.length,0);
+function applyCode(o){for(const k in done)done[k]=o.d[k]||[];Object.assign(ST,o.s);Object.assign(SET,o.t||{});save();saveST();saveSET();applyPal();theme();applyHL()}
+function ask(t,m,y,cb){$("dT").textContent=t;$("dM").textContent=m;$("dY").textContent=y;$("dlg").classList.add("open");$("dY").onclick=()=>{$("dlg").classList.remove("open");cb()};$("dN").onclick=()=>$("dlg").classList.remove("open")}
+function buildBak(l){let prev=null;try{prev=localStorage.getItem("fs-prev")}catch(e){}
+ l.insertAdjacentHTML("beforeend",'<p class="lbl">Sikkerhetskopi</p><p class="hint" style="text-align:left;margin:0 0 8px">Eksporter lager en kode med fremgangen din. Importer erstatter fremgangen på denne enheten med en kode.</p><textarea id="bak" rows="3" placeholder="Lim inn kode her for å importere" style="width:100%;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--fg);padding:10px;font:inherit;font-size:12px"></textarea><div class="act" style="margin-top:8px"><button id="bEx">Eksporter</button><button id="bIm">Importer</button>'+(prev?'<button id="bUn">Gjenopprett forrige</button>':'')+'</div><div class="act" style="margin-top:8px"><button id="bRs" style="color:#e03131;border-color:#e03131">Nullstill fremgang</button></div>');
+ $("bEx").onclick=()=>ask("Eksportere fremgang?","Dette lager en kode med fremgangen din og kopierer den hvis det er mulig. Ingenting endres i appen.","Eksporter",async()=>{const c=makeCode();$("bak").value=c;try{await navigator.clipboard.writeText(c);toast("Koden er kopiert")}catch(e){toast("Kopier koden fra feltet")}});
+ $("bIm").onclick=()=>{const o=readCode($("bak").value.trim());if(!o){toast("Lim inn en gyldig kode først");return}
+  ask("Importere fremgang?",`Dette erstatter fremgangen på denne enheten (nivåer, stjerner, rekker, prestasjoner og innstillinger) med innholdet i koden.\n\nKoden har ${cnt(o.d)} løste nivåer. Du har ${cnt(done)} nå.\n\nFremgangen du har nå lagres automatisk først, så du kan angre importen.`,"Importer",()=>{try{localStorage.setItem("fs-prev",makeCode())}catch(e){}applyCode(o);toast("Importert!");buildSet()})};
+ $("bRs").onclick=()=>ask("Nullstille fremgang?","Dette sletter alle løste nivåer, stjerner, rekker, prestasjoner og pågående brett på denne enheten. Innstillinger beholdes.\n\nFremgangen du har nå lagres automatisk først, så du kan gjenopprette den med «Gjenopprett forrige».","Nullstill",()=>{resetAll();buildSet()});
+ if(prev)$("bUn").onclick=()=>{const o=readCode(prev);if(!o)return;ask("Gjenopprette forrige fremgang?",`Dette setter tilbake fremgangen du hadde før siste import eller nullstilling (${cnt(o.d)} løste nivåer). Fremgangen du har nå erstattes.`,"Gjenopprett",()=>{applyCode(o);try{localStorage.removeItem("fs-prev")}catch(e){}toast("Tilbakestilt");buildSet()})}}
+const SPEC={x9:{name:"Diagonal 9×9",d:"hard",v:"x",off:400000,clues:23,rule:"Begge diagonalene (skrått over brettet) må også ha alle fargene."},
+k9:{name:"Antispringer 9×9",d:"hard",v:"k",off:500000,clues:21,rule:"Samme farge kan ikke stå et hestehopp fra hverandre (L-trekk som en springer i sjakk)."},
+x6:{name:"Diagonal 6×6",d:"medium",v:"x",off:600000,clues:14,rule:"Begge diagonalene må også ha alle fargene."}};
+let sp="";
+const dk=()=>sp||diff;
+function buildSpec(){const l=$("specList");l.innerHTML="";
+ for(const k in SPEC){const n=done[k].length,b=document.createElement("button");b.className="mb";
+  b.innerHTML=`${SPEC[k].name}<small>${SPEC[k].rule}</small><small>${n} / ${LEVELS} løst</small><i style="width:${n/LEVELS*100}%"></i>`;
+  b.onclick=()=>{snd("ui");let v=1;while(done[k].includes(v)&&v<LEVELS)v++;load(SPEC[k].d,v,false,false,k);buildList();$("list").classList.add("open")};l.appendChild(b)}}
+let weekly=false,wnum=0,qOpen=false,lp=-1,tut=false,tutI=-1,tutN=0,tutColor=false,checked=false;
+const chkSet=new Set();
+const SYM=["●","■","▲","◆","★","✚","⬣","♥","☾"];
+function cand(i){let u=0;for(const p of P[i])if(cur[p])u|=1<<cur[p];return full&~u}
+function why(i){if(cur[i]&&cur[i]!==sol[i])return "Feil farge i denne ruten – her er den riktige.";
+ const v=sol[i];if(pc(cand(i))===1)return "Bare én farge passer her, de andre finnes allerede i raden, kolonnen eller ruten.";
+ const cf=CFG[diff],r=Math.floor(i/N),c=i%N,rk=[...Array(N).keys()],
+ U=[["raden",rk.map(k=>r*N+k)],["kolonnen",rk.map(k=>k*N+c)],["ruten",P[i].concat(i).filter(j=>Math.floor(Math.floor(j/N)/cf.br)===Math.floor(r/cf.br)&&Math.floor((j%N)/cf.bc)===Math.floor(c/cf.bc))]];
+ for(const[n,u]of U)if(u.every(j=>j===i||cur[j]||!(cand(j)>>v&1)))return `Denne fargen kan bare stå her i ${n}.`;
+ return "Ingen enkel regel funnet, men dette er fargen i løsningen."}
+function buildPlay(l){l.insertAdjacentHTML("beforeend",'<p class="lbl">Fremheving ved valgt rute</p>');
+ const sg=document.createElement("div");sg.className="seg";
+ [["all","Rad, kolonne, rute"],["lines","Rad og kolonne"],["off","Av"]].forEach(([k,n])=>{const b=document.createElement("button");b.textContent=n;b.className=SET.hm===k?"on":"";b.onclick=()=>{SET.hm=k;saveSET();snd("ui");buildSet()};sg.appendChild(b)});l.appendChild(sg);
+ const d=document.createElement("div");d.className="sl";d.innerHTML=`<label>Styrke<span>${SET.hi} %</span></label><input type="range" min="0" max="100" step="5" value="${SET.hi}" aria-label="Styrke på fremheving">`;
+ const r=d.querySelector("input"),lb=d.querySelector("span");r.oninput=()=>{SET.hi=+r.value;lb.textContent=SET.hi+" %";applyHL();saveSET()};l.appendChild(d);
+ l.insertAdjacentHTML("beforeend",'<div class="pv"><i></i><i class="h"></i><i class="h"></i><i></i><i class="h"></i></div><p class="hint" style="text-align:left;margin:0 0 8px">I diagonalmodus fremheves også diagonalene, og i antispringer-modus hestehoppene.</p><p class="lbl">Spillet</p>');
+ [["sw","Vis hvor valgt farge kan stå"],["err","Vis feil (skravur)"],["an","Auto-notater-knapp"]].forEach(([k,n])=>{const b=document.createElement("button");b.className="row"+(SET[k]?" on":"");b.innerHTML=`${n}<span>${SET[k]?"På":"Av"}</span>`;b.onclick=()=>{SET[k]=!SET[k];saveSET();snd("ui");buildSet()};l.appendChild(b)})}
+const QP=[{id:"s3",t:"Løs 3 brett",n:3,ev:"win"},{id:"s5",t:"Løs 5 brett",n:5,ev:"win"},{id:"nh2",t:"Løs 2 brett uten hint",n:2,ev:"clean"},{id:"st3",t:"Få 3 stjerner på ett brett",n:1,ev:"star3"},{id:"dl",t:"Løs en daglig utfordring",n:1,ev:"daily"},{id:"hd",t:"Løs et vanskelig brett",n:1,ev:"hard"},{id:"md",t:"Løs et middels brett",n:1,ev:"med"}];
+function quests(){const t=today();if(ST.q.d!==t)ST.q={d:t,p:{},done:0};const r=rng(t*31+7),seen={},out=[];
+ for(const q of shuffle(QP.slice(),r)){if(seen[q.ev])continue;seen[q.ev]=1;out.push(q);if(out.length===3)break}return out}
+function qEvent(evs){const qs=quests();qs.forEach(q=>{if(evs.includes(q.ev))ST.q.p[q.id]=Math.min(q.n,(ST.q.p[q.id]||0)+1)});
+ if(!ST.q.done&&qs.every(q=>(ST.q.p[q.id]||0)>=q.n)){ST.q.done=1;ST.qd++;const g=ST.fz<3;if(g)ST.fz++;setTimeout(()=>toast("🏹 Dagens oppdrag fullført!"+(g?" +1 ❄️":"")),4000)}}
+const curNames=()=>(PALS.find(x=>x.id===SET.pal&&unlocked(x))||PALS[0]).n;
+function resetAll(){try{localStorage.setItem("fs-prev",makeCode())}catch(e){}
+ for(const k in done)done[k]=[];
+ Object.assign(ST,{daily:[],clean:0,ach:[],dd:{easy:[],medium:[],hard:[]},bt:{},st:{},tm:{easy:{n:0,sum:0,best:0},medium:{n:0,sum:0,best:0},hard:{n:0,sum:0,best:0}},fz:1,fzd:[],wk:[],q:{d:0,p:{},done:0},qd:0,last:null});
+ SAVE={};save();saveST();wsave();applyPal();toast("Fremgangen er nullstilt")}
+function tutNext(){sel=-1;const e=[...cur.keys()].filter(k=>!cur[k]);
+ if(!e.length){won=true;tut=false;tutI=-1;tutColor=false;pick=0;toast("Flott! Rute først eller farge først – bruk det som passer deg 🎉");show("menu");return}
+ tutI=e.find(k=>pc(cand(k))===1);if(tutI===undefined)tutI=e[0];
+ const k=tutN-e.length+1;tutColor=tutN>3&&k>tutN-3;if(!(tutColor&&pick===sol[tutI]))pick=0;
+ $("rule").textContent=tutColor?`Steg ${k} av ${tutN} – prøv det raskere: trykk først på fargen «${curNames()[CFG[diff].col[sol[tutI]-1]]}» (markert under brettet), og så på den markerte ruten.`:`Steg ${k} av ${tutN}: Trykk på den markerte ruten.`}
+function startTut(){load("easy",1,false,false,"",true);tutN=cur.filter(v=>!v).length;tutNext();render()}
+$("tutB").onclick=()=>{snd("ui");startTut()};
+$("autoB").onclick=()=>{push();for(let i=0;i<N*N;i++)if(!puz[i]&&!cur[i])notes[i]=cand(i);snd("ui");render()};
+$("chkB").onclick=()=>{if(won||tut)return;ask("Kontrollere brettet?","Appen sjekker fargene du har lagt mot løsningen og markerer feil med skravur. Det gir maks 2 stjerner på dette brettet. Hint brukes ikke.","Kontroller",()=>{checked=true;const w=[...cur.keys()].filter(k=>cur[k]&&cur[k]!==sol[k]);chkSet.clear();w.forEach(k=>chkSet.add(k));snd(w.length?"bad":"place");toast(w.length?`${w.length} ${w.length==1?"rute er":"ruter er"} feil – markert med skravur.`:"Alt du har lagt så langt er riktig ✓");render()})};
+$("moreB").onclick=()=>{const h=$("more").hidden;$("more").hidden=!h;$("moreB").classList.toggle("on",h);snd("ui")};
+document.querySelectorAll("#more button").forEach(b=>b.addEventListener("click",()=>{$("more").hidden=true;$("moreB").classList.remove("on")}));
+function applyHL(){document.documentElement.style.setProperty("--hlp",(2+SET.hi*0.4)+"%")}
+function hlSet(){const S=new Set();if(sel<0||SET.hm==="off")return S;const cf=CFG[diff],r=Math.floor(sel/N),c=sel%N;
+ for(const j of P[sel]){const jr=Math.floor(j/N),jc=j%N,box=Math.floor(jr/cf.br)===Math.floor(r/cf.br)&&Math.floor(jc/cf.bc)===Math.floor(c/cf.bc);
+  if(SET.hm==="all"||!(box&&jr!==r&&jc!==c))S.add(j)}return S}
+const DICT={en:{
+"‹ Meny":"‹ Menu","Fortsett":"Continue","Spesialbrett":"Special boards","Egne regler":"Extra rules","Prestasjoner":"Achievements","Statistikk":"Statistics","Innstillinger":"Settings","Hjelp":"Help",
+"Daglig utfordring":"Daily challenge","📅 Kalender":"📅 Calendar","Kalender":"Calendar","Ukens utfordring":"Weekly challenge","Dagens oppdrag":"Today's quests","Slik spiller du":"How to play",
+"Lett":"Easy","Middels":"Medium","Vanskelig":"Hard","Forrige nivå":"Previous level","Neste nivå":"Next level","Forrige måned":"Previous month","Neste måned":"Next month",
+"Språk":"Language","Følg telefonen":"Follow phone","Utseende":"Appearance","System":"System","Lys":"Light","Mørk":"Dark","Fargepalett":"Color palette","Standard":"Standard","Fargeblindvennlig":"Color-blind friendly","Pastell":"Pastel","Jord":"Earth",
+"Lyd og vibrasjon":"Sound and vibration","Lydeffekter":"Sound effects","Musikk":"Music","Vibrasjonsstyrke":"Vibration strength","Av":"Off","På":"On",
+"Fremheving ved valgt rute":"Highlight for the selected cell","Rad, kolonne, rute":"Row, column, box","Rad og kolonne":"Row and column","Styrke":"Strength","Styrke på fremheving":"Highlight strength","Spillet":"Gameplay",
+"Vis hvor valgt farge kan stå":"Show where the chosen color can go","Vis feil (skravur)":"Show mistakes (hatching)","Auto-notater-knapp":"Auto-notes button",
+"I diagonalmodus fremheves også diagonalene, og i antispringer-modus hestehoppene.":"In diagonal mode the diagonals are highlighted too, and in anti-knight mode the knight moves.",
+"Vibrasjon støttes ikke i alle nettlesere, for eksempel Safari på iPhone.":"Vibration isn't supported in all browsers, for example Safari on iPhone.",
+"Sikkerhetskopi":"Backup","Eksporter lager en kode med fremgangen din. Importer erstatter fremgangen på denne enheten med en kode.":"Export creates a code with your progress. Import replaces the progress on this device with a code.",
+"Lim inn kode her for å importere":"Paste a code here to import","Eksporter":"Export","Importer":"Import","Nullstill fremgang":"Reset progress","Gjenopprett forrige":"Restore previous","Nullstill":"Reset","Gjenopprett":"Restore","Avbryt":"Cancel","Kontroller":"Check",
+"🔒 Låses opp med «{0}»":"🔒 Unlocks with “{0}”","Låses opp med prestasjonen «{0}»":"Unlocks with the achievement “{0}”",
+"Eksportere fremgang?":"Export progress?","Importere fremgang?":"Import progress?","Nullstille fremgang?":"Reset progress?","Gjenopprette forrige fremgang?":"Restore previous progress?","Kontrollere brettet?":"Check the board?",
+"Dette lager en kode med fremgangen din og kopierer den hvis det er mulig. Ingenting endres i appen.":"This creates a code with your progress and copies it if possible. Nothing changes in the app.",
+"Dette erstatter fremgangen på denne enheten (nivåer, stjerner, rekker, prestasjoner og innstillinger) med innholdet i koden.":"This replaces the progress on this device (levels, stars, streaks, achievements and settings) with the contents of the code.",
+"Koden har {0} løste nivåer. Du har {1} nå.":"The code has {0} solved levels. You have {1} now.",
+"Fremgangen du har nå lagres automatisk først, så du kan angre importen.":"Your current progress is saved automatically first, so you can undo the import.",
+"Dette setter tilbake fremgangen du hadde før siste import eller nullstilling ({0} løste nivåer). Fremgangen du har nå erstattes.":"This restores the progress you had before the last import or reset ({0} solved levels). Your current progress is replaced.",
+"Dette sletter alle løste nivåer, stjerner, rekker, prestasjoner og pågående brett på denne enheten. Innstillinger beholdes.":"This deletes all solved levels, stars, streaks, achievements and boards in progress on this device. Settings are kept.",
+"Fremgangen du har nå lagres automatisk først, så du kan gjenopprette den med «Gjenopprett forrige».":"Your current progress is saved automatically first, so you can restore it with “Restore previous”.",
+"Appen sjekker fargene du har lagt mot løsningen og markerer feil med skravur. Det gir maks 2 stjerner på dette brettet. Hint brukes ikke.":"The app checks the colors you've placed against the solution and marks mistakes with hatching. This gives at most 2 stars on this board. No hint is used.",
+"Koden er kopiert":"Code copied","Kopier koden fra feltet":"Copy the code from the field","Lim inn en gyldig kode først":"Paste a valid code first","Importert!":"Imported!","Fremgangen er nullstilt":"Progress has been reset","Tilbakestilt":"Restored","Resultat kopiert!":"Result copied!","Kopier resultatet:":"Copy the result:",
+"{0} rute er feil – markert med skravur.":"{0} cell is wrong – marked with hatching.","{0} ruter er feil – markert med skravur.":"{0} cells are wrong – marked with hatching.","Alt du har lagt så langt er riktig ✓":"Everything you've placed so far is correct ✓",
+"🏹 Dagens oppdrag fullført!":"🏹 Today's quests completed!","🏹 Dagens oppdrag fullført! +1 ❄️":"🏹 Today's quests completed! +1 ❄️","Flott! Rute først eller farge først – bruk det som passer deg 🎉":"Great! Cell first or color first – use whatever suits you 🎉",
+"Angre":"Undo","Notater":"Notes","Slett":"Erase","Hint":"Hint","Mer":"More","Auto-notater":"Auto-notes","Start på nytt":"Restart","Symboler":"Symbols",
+"Hver farge skal bare forekomme én gang i hver rad, kolonne og rute.":"Each color must appear only once in every row, column and box.",
+"Løst! 🎉":"Solved! 🎉","Del resultat":"Share result","Til menyen":"To the menu","Se kapitler":"See chapters","Kap {0}":"Ch {0}","🔒 Kap {0}":"🔒 Ch {0}",
+"{0} – nivå {1} er fullført. Tid: {2}":"{0} – level {1} completed. Time: {2}","Daglig utfordring løst! Rekke: {0}. Tid: {1}":"Daily challenge solved! Streak: {0}. Time: {1}","Ukens brett løst! Tid: {0}":"Weekly board solved! Time: {0}",
+"{0} – ny rekord! 🏅":"{0} – new record! 🏅","1 dag":"1 day","{0} dager":"{0} days",
+"Ukens brett":"Weekly board","Vanskelig · uke {0}":"Hard · week {0}","Daglig · {0}":"Daily · {0}","{0} · nivå {1}":"{0} · level {1}","Daglig · {0} · {1}":"Daily · {0} · {1}",
+"{0} · rekke: {1} · ❄️ {2}":"{0} · streak: {1} · ❄️ {2}","Vanskelig 9×9 · ny hver mandag":"Hard 9×9 · new every Monday","Alle tre gir +1 ❄️ (maks 3)":"All three give +1 ❄️ (max 3)",
+"✅ {0} ({1}/{2})":"✅ {0} ({1}/{2})","⬜ {0} ({1}/{2})":"⬜ {0} ({1}/{2})",
+"{0} · {1} / {2} løst":"{0} · {1} / {2} solved","{0}: {1} / {2} løst":"{0}: {1} / {2} solved","{0} / {1} løst":"{0} / {1} solved",
+"ma":"Mo","ti":"Tu","on":"We","to":"Th","fr":"Fr","lø":"Sa","sø":"Su",
+"Rekke: {0}":"Streak: {0}","Dager med daglig brett løst: {0}":"Days with a daily board solved: {0}","Beste tid: {0} · Snitt: {1}":"Best time: {0} · Average: {1}","{0} nivåer uten hint":"{0} levels without hints","Med 3 stjerner: {0} nivåer":"With 3 stars: {0} levels",
+"Kapittel {0} åpnes med 20 ★ i kapittel {1}. Du har {2}.":"Chapter {0} unlocks with 20 ★ in chapter {1}. You have {2}.",
+"Første løsning":"First solve","Løs ditt første nivå":"Solve your first level","På vei":"On the way","Løs 10 nivåer":"Solve 10 levels","Utholdende":"Persistent","Løs 50 nivåer":"Solve 50 levels","Hundre!":"A hundred!","Løs 100 nivåer":"Solve 100 levels","Fargemester":"Color master","Løs 300 nivåer":"Solve 300 levels",
+"Lett som en plett":"Easy as pie","Løs 25 lette nivåer":"Solve 25 easy levels","Midt i blinken":"Bullseye","Løs 25 middels nivåer":"Solve 25 medium levels","Modig":"Brave","Løs ditt første vanskelige nivå":"Solve your first hard level","Hjernetrim":"Brain training","Løs 25 vanskelige nivåer":"Solve 25 hard levels",
+"Uten hjelp":"No help","Løs 5 nivåer uten hint":"Solve 5 levels without hints","Stjernespiller":"Star player","Få 3 stjerner på 10 nivåer":"Get 3 stars on 10 levels","Ukens utfordrer":"Weekly challenger","Løs ukens utfordring":"Solve the weekly challenge","Oppdragsjeger":"Quest hunter","Fullfør dagens oppdrag 5 ganger":"Complete the daily quests 5 times",
+"Spesialist":"Specialist","Løs 10 spesialbrett":"Solve 10 special boards","Dagens løsning":"Daily solve","Løs en daglig utfordring":"Solve a daily challenge","Hele dagen":"All day","Løs alle tre daglige brett samme dag":"Solve all three daily boards on the same day","Tre på rad":"Three in a row","Daglig utfordring 3 dager på rad":"Daily challenge 3 days in a row","Ei hel uke":"A whole week","Daglig utfordring 7 dager på rad":"Daily challenge 7 days in a row",
+"Løs 3 brett":"Solve 3 boards","Løs 5 brett":"Solve 5 boards","Løs 2 brett uten hint":"Solve 2 boards without hints","Få 3 stjerner på ett brett":"Get 3 stars on one board","Løs et vanskelig brett":"Solve a hard board","Løs et middels brett":"Solve a medium board",
+"Antispringer 9×9":"Anti-knight 9×9","Begge diagonalene (skrått over brettet) må også ha alle fargene.":"Both diagonals (corner to corner) must also contain all the colors.","Samme farge kan ikke stå et hestehopp fra hverandre (L-trekk som en springer i sjakk).":"The same color can't be a knight's move apart (an L-shaped jump like a chess knight).","Begge diagonalene må også ha alle fargene.":"Both diagonals must also contain all the colors.",
+"Feil farge i denne ruten – her er den riktige.":"Wrong color in this cell – here is the right one.","Bare én farge passer her, de andre finnes allerede i raden, kolonnen eller ruten.":"Only one color fits here; the others already appear in the row, column or box.",
+"Denne fargen kan bare stå her i {0}.":"This color can only go here in the {0}.","raden":"row","kolonnen":"column","ruten":"box","Ingen enkel regel funnet, men dette er fargen i løsningen.":"No simple rule found, but this is the color in the solution.",
+"Trykk på den markerte ruten først.":"Tap the highlighted cell first.","Trykk først på den markerte fargen under brettet.":"First tap the highlighted color below the board.","{0} Velg riktig farge under brettet.":"{0} Pick the right color below the board.","Trykk først på den markerte ruten.":"First tap the highlighted cell.",
+"Det er ikke fargen vi skal bruke nå. Velg den markerte fargen.":"That isn't the color we're using now. Pick the highlighted color.","Bra! Trykk nå på den markerte ruten.":"Good! Now tap the highlighted cell.","Ikke riktig farge her. Prøv en annen.":"Not the right color here. Try another.",
+"Steg {0} av {1}: Trykk på den markerte ruten.":"Step {0} of {1}: Tap the highlighted cell.","Steg {0} av {1} – prøv det raskere: trykk først på fargen «{2}» (markert under brettet), og så på den markerte ruten.":"Step {0} of {1} – try the faster way: first tap the color “{2}” (highlighted below the board), then the highlighted cell.",
+"Rad {0}, kolonne {1}, {2}":"Row {0}, column {1}, {2}","tom":"empty","notater":"notes","{0} (ledetråd)":"{0} (given)","{0}, konflikt":"{0}, conflict",
+"rød":"red","oransje":"orange","gul":"yellow","grønn":"green","blågrønn":"teal","lyseblå":"light blue","blå":"blue","lilla":"purple","rosa":"pink","rødoransje":"vermilion","grå":"gray","lysoransje":"light orange","lysegul":"light yellow","limegrønn":"lime green","mintgrønn":"mint green","blålilla":"blue-violet","lyserosa":"light pink","fiolett":"violet",
+"murstein":"brick","oker":"ochre","sennep":"mustard","olivengrønn":"olive green","grønnblå":"blue-green","stålblå":"steel blue","blågrå":"blue-gray","plomme":"plum","brunrosa":"brownish pink",
+"🟢 Lett ✅":"🟢 Easy ✅","🟢 Lett ⬜":"🟢 Easy ⬜","🟡 Middels ✅":"🟡 Medium ✅","🟡 Middels ⬜":"🟡 Medium ⬜","🔴 Vanskelig ✅":"🔴 Hard ✅","🔴 Vanskelig ⬜":"🔴 Hard ⬜","🔥 Rekke: {0}":"🔥 Streak: {0}",
+"Målet":"The goal","Fyll brettet slik at hver farge bare finnes én gang i hver rad, hver kolonne og hver tykt innrammede rute.":"Fill the board so every color appears only once in each row, each column and each box with a thick border.",
+"Spille":"Playing","Trykk på en tom rute og velg farge under brettet. Ruter med en liten prikk er ledetråder og kan ikke endres. Tips: trykk på en farge først (uten valgt rute) og deretter på flere ruter, så fylles de med den fargen.":"Tap an empty cell and pick a color below the board. Cells with a dark ring are clues and can't be changed. Tip: tap a color first (with no cell selected) and then tap several cells to fill them with that color.",
+"Nedtonede farger":"Dimmed colors","Når en farge er brukt like mange ganger som brettet er stort, blir knappen nedtonet. Det betyr bare at fargen er brukt opp, ikke at plasseringen er riktig. Ruter som bryter reglene får skravur.":"When a color has been used as many times as the board is wide, its button is dimmed. That only means the color is used up, not that the placement is correct. Cells that break the rules get hatching.",
+"Ukens utfordring og oppdrag":"Weekly challenge and quests","Hver uke er det ett ekstra vanskelig 9×9-brett. Hver dag får du tre oppdrag, og når alle er fullført får du en ❄️.":"Every week there is one extra-hard 9×9 board. Every day you get three quests, and when all are completed you get a ❄️.",
+"Brett med en ekstra regel: diagonalene må ha alle fargene, eller samme farge kan ikke stå et hestehopp fra hverandre. De har egne nivåer og stjerner.":"Boards with an extra rule: the diagonals must contain all the colors, or the same color can't be a knight's move apart. They have their own levels and stars.",
+"Slå på Notater for å merke farger som kan passe i en rute.":"Turn on Notes to mark colors that could fit in a cell.","Angre og hint":"Undo and hints","Angre tar deg tilbake steg for steg. Hint fyller inn riktig farge, men gir bare én stjerne.":"Undo takes you back step by step. A hint fills in the right color, but gives only one star.",
+"Stjerner":"Stars","1 stjerne for å løse, 2 uten hint, 3 uten hint og raskt nok. Nivåene er delt i kapitler på 25, og neste kapittel åpnes med 20 ★ i forrige.":"1 star for solving, 2 without hints, 3 without hints and fast enough. Levels are split into chapters of 25, and the next chapter opens with 20 ★ in the previous one.",
+"Tre nye brett hver dag, ett på hver vanskelighetsgrad. Går du glipp av en dag, kan en fryst dag ❄️ redde rekken. Du får en ny for hver 7. dag du spiller (maks 3). Tidligere brett finner du i kalenderen.":"Three new boards every day, one for each difficulty. If you miss a day, a frozen day ❄️ can save your streak. You get a new one for every 7th day you play (max 3). Earlier boards are in the calendar.",
+"🏆 {0}":"🏆 {0}","Prøv selv (interaktiv)":"Try it yourself (interactive)","Kom i gang":"Get started"
+}};
+const LANGS={nb:"Norsk",en:"English"};
+let LANG="nb";const PATS={},OR=new WeakMap(),OA=new WeakMap(),ATTR=["aria-label","placeholder","title"];
+function curLang(){const s=SET.lang||"auto";if(s!=="auto"&&(s==="nb"||DICT[s]))return s;const n=(navigator.language||"nb").toLowerCase();if(/^(nb|no|nn)/.test(n))return "nb";const c=n.slice(0,2);return DICT[c]?c:"en"}
+function LOC(){return {nb:"nb-NO",en:"en-GB"}[LANG]||"en-GB"}
+function patFor(l){if(PATS[l])return PATS[l];PATS[l]=[];for(const k in DICT[l]){if(k.includes("{")){PATS[l].push([new RegExp("^"+k.replace(/[.*+?^$()|[\]\\]/g,"\\$&").replace(/\{(\d)\}/g,"([\\s\\S]+?)")+"$"),DICT[l][k]])}}return PATS[l]}
+function trStr(s,l){l=l||LANG;if(l==="nb"||!s)return s;const d=DICT[l];
+ return s.split("\n").map(line=>{const k=line.trim();if(!k)return line;let r;
+  if(Object.hasOwn(d,k))r=d[k];
+  else{const m=/^(.*?)( ✓)$/.exec(k);if(m&&Object.hasOwn(d,m[1]))r=d[m[1]]+m[2]}
+  if(r===undefined){for(const[re,tp]of patFor(l)){const m=re.exec(k);if(m){r=tp.replace(/\{(\d)\}/g,(_,i)=>trStr(m[+i+1],l));break}}}
+  return r===undefined?line:line.replace(k,()=>r)}).join("\n")}
+function trText(n){const p=n.parentNode&&n.parentNode.nodeName;if(p==="SCRIPT"||p==="STYLE"||p==="TEXTAREA")return;const v=n.nodeValue,r=OR.get(n),o=r&&v===r.t?r.o:v,t=trStr(o);
+ if(t!==o){OR.set(n,{o,t});if(t!==v)n.nodeValue=t}else{OR.delete(n);if(v!==o)n.nodeValue=o}}
+function trEl(e){for(const a of ATTR){if(!e.hasAttribute||!e.hasAttribute(a))continue;const v=e.getAttribute(a);let m=OA.get(e);if(!m)OA.set(e,m={});const r=m[a],o=r&&v===r.t?r.o:v,t=trStr(o);
+ if(t!==o){m[a]={o,t};if(t!==v)e.setAttribute(a,t)}else{delete m[a];if(v!==o)e.setAttribute(a,o)}}}
+function trTree(root){if(root.nodeType===3){trText(root);return}if(root.nodeType!==1)return;trEl(root);const w=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(n.nodeType===3)trText(n);else trEl(n)}}
+function setLang(){LANG=curLang();document.documentElement.lang=LANG;trTree(document.body)}
+new MutationObserver(ms=>{for(const m of ms){if(m.type==="characterData")trText(m.target);else if(m.type==="attributes")trEl(m.target);else m.addedNodes.forEach(trTree)}}).observe(document.body,{childList:true,characterData:true,subtree:true,attributes:true,attributeFilter:ATTR});
+function buildLang(l){const sg=document.createElement("div");sg.className="seg";sg.style.flexWrap="wrap";
+ [["auto","Følg telefonen"],...Object.entries(LANGS)].forEach(([k,n])=>{const b=document.createElement("button");b.textContent=n;b.className=(SET.lang||"auto")===k?"on":"";b.onclick=()=>{SET.lang=k;saveSET();setLang();snd("ui");buildSet()};sg.appendChild(b)});l.appendChild(sg)}
+autoFreeze();
+applyHL();applyPal();theme();setLang();if(!ST.seen){ST.seen=1;saveST();show("how")}else show("menu");
+
+</script>
+<script>if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))</script>
+</body>
+</html>
