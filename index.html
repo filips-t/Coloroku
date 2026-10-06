@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fargesudoku</title>
+<title>Palettle</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#17151c" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Fargesudoku">
+<meta name="apple-mobile-web-app-title" content="Palettle">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root{--bg:#f3efe8;--fg:#1d1b22;--mut:#6b6676;--card:#fffdf9;--line:#cfc8d8;--thick:#2b2833;--acc:#4361ee;
@@ -149,7 +149,7 @@ button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 <body>
 <main>
 <section id="menu" class="view">
-<h1 class="big">Fargesudoku</h1><div class="logo" id="logo"></div>
+<h1 class="big">Palettle</h1><div class="logo" id="logo"></div>
 <div class="mb daily" id="mDaily"></div>
 <button class="mb" id="mCont" hidden></button>
 <div id="mDiffs"></div>
@@ -166,7 +166,7 @@ button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 <section id="stat" class="view" hidden><div class="top"><button class="back" data-go="menu">‹ Meny</button><h2>Statistikk</h2></div><div id="statList"></div></section>
 <section id="how" class="view" hidden><div class="top"><button class="back" data-go="menu">‹ Meny</button><h2>Slik spiller du</h2></div>
 <div class="ac"><em>🎯</em><div><b>Målet</b><small>Fyll brettet slik at hver farge bare finnes én gang i hver rad, hver kolonne og hver tykt innrammede rute.</small></div></div>
-<div class="ac"><em>👆</em><div><b>Spille</b><small>Trykk på en tom rute og velg farge under brettet. Ruter med en liten prikk er ledetråder og kan ikke endres. Tips: trykk på en farge først (uten valgt rute) og deretter på flere ruter, så fylles de med den fargen.</small></div></div>
+<div class="ac"><em>👆</em><div><b>Spille</b><small>Trykk på en tom rute og velg farge under brettet. Ruter med en mørk ring er ledetråder og kan ikke endres. Tips: trykk på en farge først og deretter på flere ruter, så fylles de med den fargen. Er en rute allerede valgt, trykk på samme farge igjen (eller på ruten) for å bytte til denne måten.</small></div></div>
 <div class="ac"><em>🎨</em><div><b>Nedtonede farger</b><small>Når en farge er brukt like mange ganger som brettet er stort, blir knappen nedtonet. Det betyr bare at fargen er brukt opp, ikke at plasseringen er riktig. Ruter som bryter reglene får skravur.</small></div></div>
 <div class="ac"><em>🏆</em><div><b>Ukens utfordring og oppdrag</b><small>Hver uke er det ett ekstra vanskelig 9×9-brett. Hver dag får du tre oppdrag, og når alle er fullført får du en ❄️.</small></div></div>
 <div class="ac"><em>🧩</em><div><b>Spesialbrett</b><small>Brett med en ekstra regel: diagonalene må ha alle fargene, eller samme farge kan ikke stå et hestehopp fra hverandre. De har egne nivåer og stjerner.</small></div></div>
@@ -177,7 +177,7 @@ button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 <button class="mb" id="tutB" style="text-align:center">Prøv selv (interaktiv)</button>
 <button class="mb" data-go="menu" style="text-align:center">Kom i gang</button></section>
 <div id="game" hidden>
-<div class="top"><button class="back" data-go="menu">‹ Meny</button><b>Fargesudoku</b><span id="timer"></span></div>
+<div class="top"><button class="back" data-go="menu">‹ Meny</button><b>Palettle</b><span id="timer"></span></div>
 <div class="tabs" id="tabs"></div>
 <div class="nav"><button id="prev" aria-label="Forrige nivå">‹</button><button class="lv" id="lvBtn"></button><button id="next" aria-label="Neste nivå">›</button></div>
 <p class="hint" id="rule" style="margin:-4px 0 10px"></p>
@@ -242,7 +242,7 @@ function render(){
   e.setAttribute("aria-label",`Rad ${r+1}, kolonne ${c+1}, `+(cur[i]?CN[cf.col[cur[i]-1]]+(puz[i]?" (ledetråd)":"")+(bad.has(i)?", konflikt":""):notes[i]?"notater":"tom"));
   if(cur[i]){const d=document.createElement("span");d.className="d"+(i===lp?" pop":"");d.style.background=ALL[cf.col[cur[i]-1]];if(showSym)d.textContent=SYM[cur[i]-1];e.appendChild(d)}
   else if(notes[i]){const t=document.createElement("span");t.className="nt";t.style.gridTemplateColumns=`repeat(${N===4?2:3},1fr)`;for(let v=1;v<=N;v++)t.innerHTML+=`<i${notes[i]>>v&1?` style="background:${ALL[cf.col[v-1]]}"`:""}></i>`;e.appendChild(t)}
-  e.onclick=()=>{if(tut){if(i!==tutI){$("rule").textContent="Trykk på den markerte ruten først.";return}if(tutColor){if(pick===sol[tutI]){sel=i;place(pick);sel=-1;render()}else $("rule").textContent="Trykk først på den markerte fargen under brettet.";return}sel=i;$("rule").textContent=why(i)+" Velg riktig farge under brettet.";render();return}if(pick&&!puz[i]){sel=i;place(pick);sel=-1;render()}else{sel=i;render()}};b.appendChild(e)}
+  e.onclick=()=>{if(tut){if(i!==tutI){$("rule").textContent="Trykk på den markerte ruten først.";return}if(tutColor){if(pick===sol[tutI]){sel=i;place(pick);sel=-1;render()}else $("rule").textContent="Trykk først på den markerte fargen under brettet.";return}sel=i;$("rule").textContent=why(i)+" Velg riktig farge under brettet.";render();return}if(pick&&!puz[i]){sel=i;place(pick,1);sel=-1;render()}else{sel=sel===i?-1:i;render()}};b.appendChild(e)}
  const cnt=new Array(N+1).fill(0);cur.forEach(v=>v&&cnt[v]++);
  lp=-1;$("autoB").hidden=!SET.an;$("timer").textContent=fmt(secs);$("pal").innerHTML="";$("pal").className="pal"+(noteMode?" nm":"");$("notes").className=noteMode?"on":"";
  for(let v=1;v<=N;v++){const e=document.createElement("button");e.style.background=ALL[cf.col[v-1]];e.setAttribute("aria-label",CN[cf.col[v-1]]);
@@ -252,8 +252,9 @@ function render(){
  $("prev").style.visibility=$("next").style.visibility=daily?"hidden":"";$("tabs").style.display=weekly||sp?"none":"";if(!tut)$("rule").textContent=sp?SPEC[sp].rule:"";
  document.querySelectorAll(".tabs button").forEach(t=>t.classList.toggle("on",t.dataset.d===diff));
  if(!won&&!tut&&!bad0.size&&cur.every(v=>v))win();else if(!won)persist()}
-function place(v){if(tut&&(sel<0||puz[sel])){if(!tutColor){$("rule").textContent="Trykk først på den markerte ruten.";return}if(v!==sol[tutI]){$("rule").textContent="Det er ikke fargen vi skal bruke nå. Velg den markerte fargen.";return}pick=v;$("rule").textContent="Bra! Trykk nå på den markerte ruten.";render();return}
+function place(v,f){if(tut&&(sel<0||puz[sel])){if(!tutColor){$("rule").textContent="Trykk først på den markerte ruten.";return}if(v!==sol[tutI]){$("rule").textContent="Det er ikke fargen vi skal bruke nå. Velg den markerte fargen.";return}pick=v;$("rule").textContent="Bra! Trykk nå på den markerte ruten.";render();return}
 if(sel<0||puz[sel]){pick=pick===v?0:v;render();return}
+ if(!f&&!noteMode&&cur[sel]===v){pick=v;sel=-1;render();return}
  if(noteMode){if(cur[sel])return;push();notes[sel]^=1<<v;snd("ui");render();return}
  push();cur[sel]=cur[sel]===v?0:v;notes[sel]=0;lp=cur[sel]?sel:-1;
  if(!cur[sel])snd("erase");else{for(const p of P[sel])notes[p]&=~(1<<v);if(SET.err!==false&&conflicts().has(sel)){snd("bad");vib([30,40,30])}else{snd("place");vib(10)}}
@@ -376,7 +377,7 @@ function wsave(){try{localStorage.setItem("fs-sv",JSON.stringify(SAVE))}catch(e)
 function persist(){if(tut)return;if(!cur.some((v,i)=>v!==puz[i])&&!notes.some(x=>x))return;const k=bkey();delete SAVE[k];SAVE[k]={c:cur,n:notes,h:hinted?1:0,k:checked?1:0,t:secs};const ks=Object.keys(SAVE);if(ks.length>30)delete SAVE[ks[0]];wsave()}
 function push(){chkSet.clear();hist.push({c:cur.slice(),n:notes.slice()});if(hist.length>300)hist.shift()}
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),3000)}
-function shareText(){const n=today();return `🎨 Fargesudoku – ${new Date(n*864e5).toLocaleDateString(LOC(),{day:"numeric",month:"long",timeZone:"UTC"})}\n`+["easy","medium","hard"].map((k,i)=>["🟢","🟡","🔴"][i]+" "+CFG[k].name+" "+(ST.dd[k].includes(n)?"✅":"⬜")).join("\n")+`\n🔥 Rekke: ${streak()}`}
+function shareText(){const n=today();return `🎨 Palettle – ${new Date(n*864e5).toLocaleDateString(LOC(),{day:"numeric",month:"long",timeZone:"UTC"})}\n`+["easy","medium","hard"].map((k,i)=>["🟢","🟡","🔴"][i]+" "+CFG[k].name+" "+(ST.dd[k].includes(n)?"✅":"⬜")).join("\n")+`\n🔥 Rekke: ${streak()}`}
 async function share(){const t=trStr(shareText());try{if(navigator.share){await navigator.share({text:t});return}}catch(e){if(e&&e.name==="AbortError")return}try{await navigator.clipboard.writeText(t);toast("Resultat kopiert!")}catch(e){prompt(trStr("Kopier resultatet:"),t)}}
 $("undo").onclick=()=>{if(won||!hist.length)return;const h=hist.pop();cur=h.c;notes=h.n;snd("erase");render()};
 $("notes").onclick=()=>{noteMode=!noteMode;snd("ui");render()};
@@ -539,7 +540,7 @@ const DICT={en:{
 "murstein":"brick","oker":"ochre","sennep":"mustard","olivengrønn":"olive green","grønnblå":"blue-green","stålblå":"steel blue","blågrå":"blue-gray","plomme":"plum","brunrosa":"brownish pink",
 "🟢 Lett ✅":"🟢 Easy ✅","🟢 Lett ⬜":"🟢 Easy ⬜","🟡 Middels ✅":"🟡 Medium ✅","🟡 Middels ⬜":"🟡 Medium ⬜","🔴 Vanskelig ✅":"🔴 Hard ✅","🔴 Vanskelig ⬜":"🔴 Hard ⬜","🔥 Rekke: {0}":"🔥 Streak: {0}",
 "Målet":"The goal","Fyll brettet slik at hver farge bare finnes én gang i hver rad, hver kolonne og hver tykt innrammede rute.":"Fill the board so every color appears only once in each row, each column and each box with a thick border.",
-"Spille":"Playing","Trykk på en tom rute og velg farge under brettet. Ruter med en liten prikk er ledetråder og kan ikke endres. Tips: trykk på en farge først (uten valgt rute) og deretter på flere ruter, så fylles de med den fargen.":"Tap an empty cell and pick a color below the board. Cells with a dark ring are clues and can't be changed. Tip: tap a color first (with no cell selected) and then tap several cells to fill them with that color.",
+"Spille":"Playing","Trykk på en tom rute og velg farge under brettet. Ruter med en mørk ring er ledetråder og kan ikke endres. Tips: trykk på en farge først og deretter på flere ruter, så fylles de med den fargen. Er en rute allerede valgt, trykk på samme farge igjen (eller på ruten) for å bytte til denne måten.":"Tap an empty cell and pick a color below the board. Cells with a dark ring are clues and can't be changed. Tip: tap a color first and then tap several cells to fill them with that color. If a cell is already selected, tap the same color again (or the cell itself) to switch to this way.",
 "Nedtonede farger":"Dimmed colors","Når en farge er brukt like mange ganger som brettet er stort, blir knappen nedtonet. Det betyr bare at fargen er brukt opp, ikke at plasseringen er riktig. Ruter som bryter reglene får skravur.":"When a color has been used as many times as the board is wide, its button is dimmed. That only means the color is used up, not that the placement is correct. Cells that break the rules get hatching.",
 "Ukens utfordring og oppdrag":"Weekly challenge and quests","Hver uke er det ett ekstra vanskelig 9×9-brett. Hver dag får du tre oppdrag, og når alle er fullført får du en ❄️.":"Every week there is one extra-hard 9×9 board. Every day you get three quests, and when all are completed you get a ❄️.",
 "Brett med en ekstra regel: diagonalene må ha alle fargene, eller samme farge kan ikke stå et hestehopp fra hverandre. De har egne nivåer og stjerner.":"Boards with an extra rule: the diagonals must contain all the colors, or the same color can't be a knight's move apart. They have their own levels and stars.",
